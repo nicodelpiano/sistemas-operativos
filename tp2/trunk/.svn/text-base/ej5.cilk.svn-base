@@ -1,0 +1,33 @@
+static const char *ident __attribute__((__unused__))
+     = "$HeadURL: https://bradley.csail.mit.edu/svn/repos/cilk/5.4.3/examples/fib.cilk $ $LastChangedBy: sukhaj $ $Rev: 517 $ $Date: 2003-10-27 10:05:37 -0500 (Mon, 27 Oct 2003) $";
+
+#include <cilk-lib.cilkh>
+#include <stdlib.h>
+#include <stdio.h>
+
+cilk int fib(int n) {
+     if (n < 2)
+	  return (n);
+     else {
+	  int x, y;
+	  x = spawn fib(n - 1);
+	  y = spawn fib(n - 2);
+	  sync;
+	  return (x + y);
+     }
+}
+
+cilk int main(int argc, char *argv[]) {
+     int n, result;
+
+     if (argc != 2) {
+	  fprintf(stderr, "Usage: fib [<cilk options>] <n>\n");
+	  Cilk_exit(1);
+     }
+     n = atoi(argv[1]);
+     result = spawn fib(n);
+     sync;
+
+     printf("Result: %d\n", result);
+     return 0;
+}

@@ -1,0 +1,107 @@
+/* ********Sistemas Operativos 1********
+*************   Practica 1      ********
+*************   Ejercicio 1     ********
+
+Alumno: Nicolas Del Piano.
+
+
+
+Suponiendo que entraron N_VISITANTES por cada molinete responda:
+
+-Cuantos visitantes entraron?
+
+Entraron 200000.
+
+-Ejecute el programa con 1 y 2 procesadores. El resultado es siempre correcto?
+Si es incorrecto, cual es la causa?
+
+No, no es siempre correcto. Ambos procesos comparten memoria y si ambos entran a la region critica, pueden
+surgir problemas, por ejemplo, si ambos leen la variable compartida en 0, los dos incrementaran la variable y guardaran 1, por lo tanto se pierde una suma.
+
+-Cual es el minimo valor que podria imprimir el programa? Bajo que circunstancia?
+
+lee:load
+incrementa:inc
+escribe:store
+
+Veamos los casos posibles, siendo que cada proceso lee, incrementa y escribe:
+
+Es 0 posible? No, ya que al menos un proceso completara su ciclo de lectura, incremento y escritura.
+
+Es 1 posible? Supongamos que es posible. Entonces un solo proceso termino correctamente la escritura, y ademas tiene que haber sido la primera y ultima. Como cada secuencia de lectura, incremento y escritura se repite N_VISITANTES veces en cada proceso esto es absurdo.
+
+Es 2 posible? 
+
+Bien, la variable visitantes arranca en 0, es decir, visitantes = 0.
+Sean M1 y M2 los procesos que realizan la lectura, incremento y escritura de la variable visitante.
+Como estos dos procesos existen simultaneamente (son concurrentes), puede darse lo siguiente:
+
+-M1 lee 0.
+-M2 lee 0.
+-M1 incrementa 0.  //sucesivamente se ejecuta N_VISITANTES-1 veces el proceso M1
+-M1 escribe 1.
+-M1 lee 1.
+-M1 incrementa 1.
+-M1 escribe 2.
+.
+.
+.
+.
+-M1 lee N_VISITANTES-2.
+-M1 incrementa N_VISITANTES-2.
+-M1 escribe N_VISITANTES-1.        // hasta aca se ejecuto N_VISITANTES-1 veces el proceso M1, es decir, visitantes = N_VISITANTES-1.
+-M2 incrementa 0.      //M2 habia leido visitantes=0, ahora incrementa el 0 en 1 y lo escribe dejando visitantes = 1.
+-M2 escribe 1.         
+-M2 lee 1.
+-M1 lee 1.             //Aparece M1 leyendo visitantes=1
+-M2 incrementa 1.      //se ejecutan en forma seguida las N_VISITANTES-1 iteraciones de M2 faltantes.
+-M2 escribe 2.
+.
+.
+.
+-M2 lee N_VISITANTES-1.
+-M2 incrementa N_VISITANTES-1.
+-M2 escribe N_VISITANTES.       //llegamos a visitantes = N_VISITANTES. 
+-M1 incrementa 1.     //habiamos leido con M1, visitantes = 1. Ahora tenemos visitantes = 2
+-M1 escribe 2.        //visitantes = 2
+
+Como vimos que visitantes=0 y visitantes=1 no son valores posibles, y llegamos a que existe una secuencia donde si podemos llegar a visitantes=2, el valor minimo es 2.
+
+-Si N_VISITANTES fuese 10, el programa funciona bien? Si es asi porque?
+
+Parece funcionar bien, pero es porque la cantidad de visitantes es reducida y es muy poco probable que ambos
+procesos entren a la vez a la region critica.
+
+-Implemente una solucion (puede usar la libreria de Cilk) y pruebela nuevamente.
+
+Implemente los candados (locks) que trae la libreria cilk.*/
+
+#include <stdio.h>
+#include <cilk-lib.cilkh>
+
+#define N_VISITANTES 10000000
+
+int visitantes = 0;
+
+Cilk_lockvar lock;
+
+cilk void molinete()
+{
+	int i;
+	for(i=0;i<N_VISITANTES;i++)
+	{	
+		Cilk_lock(lock);
+		visitantes++;
+		Cilk_unlock(lock);
+	}
+}
+
+cilk int main ()
+{
+	Cilk_lock_init(lock);
+	spawn molinete();
+	spawn molinete();
+	sync;
+	printf("Hoy hubo %d visitantes!\n", visitantes);
+	return 0;
+}

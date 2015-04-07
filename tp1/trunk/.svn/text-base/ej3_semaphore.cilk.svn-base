@@ -1,0 +1,124 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <cilk-lib.cilkh>
+
+#define N_FILOSOFOS 5
+#define ESPERA 5000000
+
+#define N_SEM 128
+#include <assert.h>
+
+typedef struct 
+{
+  int counter;
+  Cilk_lockvar mutex;
+  Cilk_lockvar queue[N_SEM];
+  int from,to;
+} Semaphore;
+
+Semaphore *SemaphoreCreate(int value)
+{ 
+  int i;
+  Semaphore *s=(Semaphore*)malloc(sizeof(Semaphore));
+  for (i=0;i<N_SEM;i++)
+  {
+    Cilk_lock_init(s->queue[i]);
+    Cilk_lock(s->queue[i]);
+  }
+  s->counter=value;
+  Cilk_lock_init(s->mutex);
+  s->from=0;
+  s->to=0;
+  return s;
+}
+
+void SempahoreDestroy(Semaphore *s)
+{
+  assert(s->from==s->to);
+  free(s);
+}
+
+void SemaphoreP(Semaphore *s)
+{
+  Cilk_lock(s->mutex);
+  if (s->counter>0)
+  {
+    s->counter--;
+  } else {
+    int t=s->to;
+    s->to=(s->to+1) % N_SEM;
+    assert(s->to!=s->from);
+    s->counter--;
+    Cilk_unlock(s->mutex);
+    Cilk_lock(s->queue[t]);
+    return;
+  }
+  Cilk_unlock(s->mutex);
+}
+
+void SemaphoreV(Semaphore *s)
+{
+  Cilk_lock(s->mutex);
+  s->counter++;
+  if (s->to!=s->from)
+  {
+    Cilk_unlock(s->queue[s->from]);
+    s->from=(s->from+1) % N_SEM;
+  }
+  Cilk_unlock(s->mutex);
+}
+
+
+Cilk_lockvar tenedor[N_FILOSOFOS];
+
+void pensar(int i)
+{
+  printf("Filosofo %d pensando...\n",i);
+  usleep(random() % ESPERA);
+}
+
+void comer(int i)
+{
+  printf("Filosofo %d comiendo...\n",i);
+  usleep(random() % ESPERA);
+}
+
+void tomar_tenedores(int i)
+{
+  Cilk_lock(tenedor[i]); /* Toma el tenedor a su derecha */
+  sleep(1);
+  Cilk_lock(tenedor[(i+1)%N_FILOSOFOS]); /* Toma el tenedor a su izquierda */
+}
+
+void dejar_tenedores(int i)
+{
+  Cilk_unlock(tenedor[i]); /* Deja el tenedor de su derecha */
+  Cilk_unlock(tenedor[(i+1)%N_FILOSOFOS]); /* Deja el tenedor de su izquierda */
+}
+
+cilk void filosofo(int i,Semaphore* s)
+{
+  for (;;)
+  {
+    SemaphoreP(s);
+    tomar_tenedores(i);
+    comer(i);
+    dejar_tenedores(i);
+    pensar(i);
+    SemaphoreV(s);
+  }
+}
+
+cilk int main ()
+{
+  Semaphore *s = SemaphoreCreate(N_FILOSOFOS-1);
+  int i;
+  for (i=0;i<N_FILOSOFOS;i++)
+    Cilk_lock_init(tenedor[i]);
+  for (i=0;i<N_FILOSOFOS;i++)
+    spawn filosofo(i,s);
+  sync;
+  return 0;
+}
+

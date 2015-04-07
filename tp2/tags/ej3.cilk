@@ -1,0 +1,30 @@
+#include <stdio.h>
+#include <cilk-lib.cilkh>
+#define N_SPAWM 2
+
+int es_primo=1;
+
+cilk void sprimo(int w, long long int n) {
+	long long int i;
+	for(i = (n/N_SPAWM)*w;i<(n/N_SPAWM)*(w+1)-2; i++)
+		if(n % (i+2) == 0) {
+			es_primo = 0;
+			abort;
+		}
+}
+
+cilk int main(int argc, char **argv) {
+	long long int n;
+	
+	if (argc<2) 
+		return -1;
+
+	sscanf(argv[1], "%lld", &n);
+	spawn sprimo(0,n);
+	spawn sprimo(1,n);
+	sync;
+	printf("El numero %lld %s primo\n", n, es_primo ? "es" : "no es");
+
+	return 0;
+}
+

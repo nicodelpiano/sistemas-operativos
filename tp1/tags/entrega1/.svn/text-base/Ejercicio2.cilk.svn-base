@@ -1,0 +1,85 @@
+/*
+********Sistemas Operativos 1********
+********   Practica 1      **********
+********   Ejercicio 2     **********
+
+Alumno: Nicolas Del Piano
+
+Pruebe el programa corriendolo con nproc= 1, 2, 3, 4, 5 y responda:
+
+-Es correcta la implementacion? Anda para todos los valores de nproc?
+
+No es correcta, funciona para nproc = 5.
+
+-Si no es correcta, que problema(s) podria(n) existir?
+
+-Introduzca una espera de 1 segundo entre la primer y segunda linea de
+tomar_tenedores y realice las pruebas de nuevo.
+
+Que problema surge? Nota: Puede inlcuir mensajes por pantalla en la
+funcion tomar_tenedores para ver que ocurre.
+
+---Respuestas
+
+La implementacion no es correcta porque al introducir una espera de un segundo entre la primer y segunda linea de tomar_tenedores, sucede que todos los filosofos toman su tenedor derecho, y quedan a la espera de que alguno lo suelte para poder comer. Entonces en el programa se produce un deadlock.
+
+*/
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <cilk-lib.cilkh>
+
+#define N_FILOSOFOS 5
+#define ESPERA 5000000
+
+Cilk_lockvar tenedor[N_FILOSOFOS];
+
+void pensar(int i)
+{
+  printf("Filosofo %d pensando...\n",i);
+  usleep(random() % ESPERA);
+}
+
+void comer(int i)
+{
+  printf("Filosofo %d comiendo...\n",i);
+  usleep(random() % ESPERA);
+}
+
+void tomar_tenedores(int i)
+{
+  Cilk_lock(tenedor[i]); /* Toma el tenedor a su derecha */
+  sleep(1);
+  Cilk_lock(tenedor[(i+1)%N_FILOSOFOS]); /* Toma el tenedor a su izquierda */
+}
+
+void dejar_tenedores(int i)
+{
+  Cilk_unlock(tenedor[i]); /* Deja el tenedor de su derecha */
+  Cilk_unlock(tenedor[(i+1)%N_FILOSOFOS]); /* Deja el tenedor de su izquierda */
+}
+
+cilk void filosofo(int i)
+{
+  for (;;)
+  {
+    tomar_tenedores(i);
+    comer(i);
+    dejar_tenedores(i);
+    pensar(i);
+  }
+}
+
+cilk int main ()
+{
+  int i;
+  for (i=0;i<N_FILOSOFOS;i++)
+    Cilk_lock_init(tenedor[i]);
+  for (i=0;i<N_FILOSOFOS;i++)
+    spawn filosofo(i);
+  sync;
+  return 0;
+}
+
+

@@ -1,0 +1,4 @@
+Para usar el servidor,
+compilar con make, y luego ejecutar sh FS.sh.
+Se abriran los 5 workers y la ultima terminal es un cliente.
+Ahi podemos conectar los clientes.

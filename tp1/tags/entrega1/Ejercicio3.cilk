@@ -1,0 +1,30 @@
+/*
+********Sistemas Operativos 1********
+********   Practica 1      **********
+********   Ejercicio 3     **********
+
+Alumno: Nicolas Del Piano
+
+Archivos Adjuntos :: ej3_semaphore.cilk y ej3_zurdo.cilk
+
+Cansados de no comer los filosofos deciden pensar una solucion a su problema.
+Uno razona que esto no sucederia si alguno de ellos fuese zurdo.
+
+-Pruebe esta solucion con nproc= 1, 2, 3, 4, 5. Funciona bien siempre? Explique porque.
+
+Funciona bien siempre (con nproc=5) porque va a existir al menos un filosofo que pueda comer, ya que al ser uno zurdo, este filosofo puede tomar su tenedor izquierdo (el derecho del zurdo) y su tenedor derecho, y entonces empezar a comer ignorando el problema que existia de la espera. Una vez que empiece a pensar, ya podrian comer los filosofos que estan sentados al lado y asi arregla el problema.
+
+
+
+Otro filosofo piensa que tampoco tendria el problema si todos fuesen diestros pero solo comiesen a lo sumo N − 1 de ellos a la vez.
+
+Pruebe esta solucion con nproc= 1, 2, 3, 4, 5. Para ello va a necesitar un semaforo de Dijkstra. 
+-Funciona bien siempre? Explique porque.
+
+Funciona bien siempre ya que queda un filosofo sin comer, por ende hay un tenedor disponible para que otro filosofo pueda comer.
+
+
+
+*/
+
+

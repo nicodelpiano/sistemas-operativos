@@ -1,0 +1,72 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <cilk-lib.cilkh>
+
+#define N_FILOSOFOS 5
+#define ESPERA 5000000
+
+Cilk_lockvar tenedor[N_FILOSOFOS];
+
+void pensar(int i)
+{
+	printf("Filosofo %d pensando...\n",i);
+	usleep(random() % ESPERA);
+}
+void comer(int i)
+{
+	printf("Filosofo %d comiendo...\n",i);
+	usleep(random() % ESPERA);
+}
+void tomar_tenedores(int i)
+{
+	Cilk_lock(tenedor[i]); /* Toma el tenedor a su derecha */
+//	printf("Soy el filosofo %d y tengo el tenedor en la mano!\n",i);
+	sleep(1);
+	Cilk_lock(tenedor[(i+1)%N_FILOSOFOS]); /* Toma el tenedor a su izquierda */
+}
+
+void tomar_tenedores_zurdo(int i)
+{
+	Cilk_lock(tenedor[(i+1)%N_FILOSOFOS]);
+	Cilk_lock(tenedor[i]);
+}
+
+void dejar_tenedores_zurdo(int i)
+{
+	Cilk_unlock(tenedor[(i+1)%N_FILOSOFOS]);
+	Cilk_unlock(tenedor[i]);
+}
+
+void dejar_tenedores(int i)
+{
+	Cilk_unlock(tenedor[i]); /* Deja el tenedor de su derecha */
+	Cilk_unlock(tenedor[(i+1)%N_FILOSOFOS]); /* Deja el tenedor de su izquierda */
+}
+
+cilk void filosofo(int i)
+{
+	tomar_tenedores_zurdo(i);
+	comer(i);
+	dejar_tenedores_zurdo(i);
+	pensar(i);
+	for (;;)
+	{
+		tomar_tenedores(i);
+		comer(i);
+		dejar_tenedores(i);
+		pensar(i);
+	}
+}
+
+cilk int main ()
+{
+	int i;
+	for (i=0;i<N_FILOSOFOS;i++)
+		Cilk_lock_init(tenedor[i]);
+	for (i=0;i<N_FILOSOFOS;i++)
+		spawn filosofo(i);
+	sync;
+	return 0;
+}
+
