@@ -24,6 +24,27 @@ a través del proceso socket , en listas de strings. Luego tomamos esa informaci
 
 El servidor de Erlang se inicia con la función *dispatcher:init()*
 
+Ejecutar con:
+$ erl
+- c(worker.erl).
+- c(dispatcher.erl).
+- dispatcher:init().
+
+Pueden descargar el cliente de: http://dcc.fceia.unr.edu.ar:81/svn/lcc/R-322/Public/TrabajoFinal/client.tar.gz
+
+Compilar con make.
+Ejemplos de ejecución (con el dispatcher corriendo):
+
+./create nombrearchivo
+contenido
+(terminar de ingresar contenido con ctrl+D)
+
+./ls
+nombrearchivo
+
+./cat nombrearchivo
+contenido
+
 ### Parte 2. POSIX Threads
 
 En este caso los workers se comunican mediante el puerto TCP, básicamente
